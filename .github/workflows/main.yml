@@ -1,0 +1,76 @@
+name: mri2fem CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Remove large packages
+        run: |
+          echo "Listing 100 largest packages"
+          dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
+          df -h
+          echo "Removing large packages"
+          sudo apt-get remove -y '^ghc-8.*'
+          sudo apt-get remove -y '^dotnet-.*'
+          sudo apt-get remove -y '^llvm-.*'
+          sudo apt-get remove -y 'php.*'
+          sudo apt-get remove -y azure-cli google-cloud-sdk hhvm google-chrome-stable firefox powershell mono-devel
+          sudo apt-get autoremove -y
+          sudo apt-get clean
+          df -h
+          echo "Removing large directories"
+          # deleting 15GB
+          rm -rf /usr/share/dotnet/
+          df -h
+
+      - name: Remove unnecessary sofware
+        uses: docker://johannr/mri2fem
+        with:
+          args: /bin/bash -c "sudo apt -y remove paraview gmsh libxmu6 && sudo apt -y autoremove && sudo apt clean"
+
+      - name: Install
+        uses: docker://johannr/mri2fem
+        with:
+          args: /bin/bash -c "source /opt/setImage.sh && cd mri2fem/ && pip3 install ."
+
+      - name: Download data
+        uses: docker://johannr/mri2fem
+        with:
+          args: /bin/bash -c "source /opt/setImage.sh && cd mri2fem/mri2fem/ && bash download_data.sh"
+
+      - name: Check book software
+        uses: docker://johannr/mri2fem
+        with:
+          args: /bin/bash -c "source /opt/setImage.sh && cd mri2fem/mri2fem/ && source setup_mri2fem_dataset.sh && python3 chp2/test_book_software.py"
+
+      - name: Run chp3 scripts
+        uses: docker://johannr/mri2fem
+        with:
+          args: /bin/bash -c "source /opt/setImage.sh && cd mri2fem/mri2fem/ && source setup_mri2fem_dataset.sh && bash chp3/all.sh"
+
+      - name: Run chp4 scripts
+        uses: docker://johannr/mri2fem
+        with:
+          args: /bin/bash -c "source /opt/setImage.sh && cd mri2fem/mri2fem/ && source setup_mri2fem_dataset.sh && bash chp4/all.sh"
+
+      - name: Run chp5 scripts
+        uses: docker://johannr/mri2fem
+        with:
+          args: /bin/bash -c "source /opt/setImage.sh && cd mri2fem/mri2fem/ && source setup_mri2fem_dataset.sh && bash chp5/all.sh"
+
+      - name: Run chp6 scripts
+        uses: docker://johannr/mri2fem
+        with:
+          args: /bin/bash -c "source /opt/setImage.sh && cd mri2fem/mri2fem/ && source setup_mri2fem_dataset.sh && bash chp6/all.sh"

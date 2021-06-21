@@ -1,0 +1,89 @@
+version: 2.1
+
+install-python-components: &install
+  name: Install mri2fem
+  command: |
+    cd mri2fem
+    pip3 install .
+
+download-data: &download-data
+  name: Download data
+  command: |
+    cd mri2fem/mri2fem
+    bash download_data.sh
+
+check-book-software: &check-book-software
+  name: Check book software
+  command: |
+    cd mri2fem/mri2fem
+    python3 chp2/test_book_software.py
+
+run-chp3-scripts: &run-chp3-scripts
+  name: Run chp3 scripts
+  command: |
+    cd mri2fem/mri2fem
+    bash chp3/all.sh
+
+run-chp4-scripts: &run-chp4-scripts
+  name: Run chp4 scripts
+  command: |
+    cd mri2fem/mri2fem
+    bash chp4/all.sh
+
+run-chp5-scripts: &run-chp5-scripts
+  name: Run chp5 scripts
+  command: |
+    cd mri2fem/mri2fem
+    bash chp5/all.sh
+
+run-chp6-scripts: &run-chp6-scripts
+  name: Run chp6 scripts
+  no_output_timeout: 30m
+  command: |
+    cd mri2fem/mri2fem
+    bash chp6/all.sh
+
+jobs:
+  build:
+    docker:
+      - image: johannr/mri2fem:latest
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+
+      OS: "Linux"
+      MINC_BIN_DIR: "/opt/freesurfer/mni/bin"
+      FSFAST_HOME: "/opt/freesurfer/fsfast"
+      FREESURFER: "/opt/freesurfer"
+      MNI_DATAPATH: "/opt/freesurfer/mni/data"
+      FS_OVERRIDE: "0"
+      FUNCTIONALS_DIR: "/opt/freesurfer/sessions"
+      MINC_LIB_DIR: "/opt/freesurfer/mni/lib"
+      FMRI_ANALYSIS_DIR: "/opt/freesurfer/fsfast"
+      MNI_DIR: "/opt/freesurfer/mni"
+      PERL5LIB: "/opt/freesurfer/mni/share/perl5"
+      MNI_PERL5LIB: "/opt/freesurfer/mni/share/perl5"
+      FREESURFER_HOME: "/opt/freesurfer"
+      LOCAL_DIR: "/opt/freesurfer/local"
+      SUBJECTS_DIR: "/opt/freesurfer/subjects"
+      FSF_OUTPUT_FORMAT: "nii.gz"
+      FIX_VERTEX_AREA: ""
+
+      PATH: "/opt/freesurfer/bin:/opt/freesurfer/fsfast/bin:/opt/freesurfer/tktools:/opt/freesurfer/mni/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+      MRI2FEMDATA: "$CIRCLE_WORKING_DIRECTORY/mri2fem/mri2fem/data/mri2fem-dataset"
+
+    steps:
+      - checkout
+      - run: *install
+      - run: *download-data
+      - run: *check-book-software
+      - run: *run-chp3-scripts
+      - run: *run-chp4-scripts
+      - run: *run-chp5-scripts
+      - run: *run-chp6-scripts
+
+workflows:
+  #version: 2
+  build:
+    jobs:
+      - build
